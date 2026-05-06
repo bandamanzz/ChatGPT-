@@ -1,0 +1,1299 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=5, user-scalable=yes" />
+  <title>論理回路トレーナー 改訂版8</title>
+  <style>
+    :root {
+      --bg: #f8fafc;
+      --card: #ffffff;
+      --text: #0f172a;
+      --muted: #64748b;
+      --border: #cbd5e1;
+      --soft: #f1f5f9;
+      --accent: #6366f1;
+      --accent2: #4338ca;
+      --accent-soft: #e0e7ff;
+      --on: #16a34a;
+      --on-soft: #dcfce7;
+      --off: #94a3b8;
+      --orange-soft: #ffedd5;
+      --red-soft: #fee2e2;
+      --ok: #ecfdf5;
+      --ok-border: #86efac;
+      --ng: #fff1f2;
+      --ng-border: #fda4af;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--text);
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      line-height: 1.6;
+    }
+
+    main {
+      max-width: 1180px;
+      margin: 0 auto;
+      padding: 18px;
+    }
+
+    h1 {
+      margin: 0 0 8px;
+      font-size: clamp(1.7rem, 5vw, 2.6rem);
+      line-height: 1.2;
+    }
+
+    h2 {
+      margin: 0 0 8px;
+      font-size: 1.45rem;
+    }
+
+    h3 {
+      margin: 0 0 6px;
+      font-size: 1.12rem;
+    }
+
+    p { margin: 0; }
+
+    .lead {
+      color: var(--muted);
+      margin-bottom: 16px;
+    }
+
+    .layout {
+      display: grid;
+      grid-template-columns: 2fr 1fr;
+      gap: 16px;
+      margin-bottom: 16px;
+    }
+
+    .card {
+      background: var(--card);
+      border: 1px solid #e2e8f0;
+      border-radius: 22px;
+      padding: 16px;
+      box-shadow: 0 3px 12px rgba(15, 23, 42, 0.04);
+    }
+
+    .top-row {
+      display: flex;
+      gap: 12px;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      margin-bottom: 12px;
+    }
+
+    select, button {
+      font: inherit;
+      border-radius: 14px;
+      border: 1px solid var(--border);
+      padding: 10px 12px;
+      background: #fff;
+    }
+
+    button {
+      cursor: pointer;
+      font-weight: 750;
+      -webkit-tap-highlight-color: transparent;
+      touch-action: manipulation;
+    }
+
+    button:hover { filter: brightness(0.98); }
+
+    button.primary {
+      color: #fff;
+      background: var(--accent);
+      border-color: var(--accent);
+    }
+
+    button.secondary {
+      color: #3730a3;
+      background: #eef2ff;
+      border-color: #c7d2fe;
+    }
+
+    button.bit {
+      min-width: 82px;
+      background: #fff;
+    }
+
+    button.bit.on {
+      color: #14532d;
+      background: var(--on-soft);
+      border-color: #86efac;
+    }
+
+    .muted {
+      color: var(--muted);
+      font-size: .92rem;
+    }
+
+    .expr {
+      font-size: 1.25rem;
+      font-weight: 850;
+      line-height: 1.35;
+    }
+
+    .sim-grid {
+      display: grid;
+      grid-template-columns: minmax(0, 1.15fr) minmax(310px, .85fr);
+      gap: 14px;
+      align-items: start;
+    }
+
+    .panel {
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 18px;
+      padding: 14px;
+      min-width: 0;
+    }
+
+    .input-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin: 10px 0;
+    }
+
+    .output-big {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(118px, 1fr));
+      gap: 8px;
+      margin-top: 10px;
+    }
+
+    .output-card {
+      border-radius: 18px;
+      border: 1px solid var(--border);
+      background: #fff;
+      padding: 12px;
+    }
+
+    .output-card .label {
+      color: var(--muted);
+      font-size: .9rem;
+    }
+
+    .output-card .value {
+      font-size: 2.2rem;
+      font-weight: 900;
+      line-height: 1.1;
+    }
+
+    .output-card.on {
+      background: var(--on-soft);
+      border-color: #86efac;
+    }
+
+    .svg-wrap {
+      width: 100%;
+      overflow: hidden;
+      border-radius: 18px;
+      background: #020617;
+      border: 1px solid #334155;
+      touch-action: pinch-zoom;
+    }
+
+    .circuit-svg {
+      display: block;
+      width: 100%;
+      min-width: 0;
+      height: auto;
+      max-width: 100%;
+      touch-action: pinch-zoom;
+    }
+
+    /* 高コントラスト回路図。
+       白背景SVGで文字が白化して潰れる問題を避けるため、図面自体を暗色にする。 */
+    .svg-wrap,
+    .quiz-diagram {
+      color-scheme: dark;
+      forced-color-adjust: none;
+      background: #020617 !important;
+    }
+
+    .circuit-svg {
+      background: #020617 !important;
+      forced-color-adjust: none;
+      filter: none !important;
+    }
+
+    /* 回路図内だけ白文字固定。
+       縁取りは文字潰れの原因になるため使わない。 */
+    .circuit-svg text {
+      fill: #ffffff !important;
+      stroke: none !important;
+      stroke-width: 0 !important;
+      paint-order: normal !important;
+      filter: none !important;
+    }
+
+    .source-label-bg {
+      fill: #020617 !important;
+      stroke: #ffffff !important;
+      stroke-width: 1.5px !important;
+    }
+
+    .mode-button.on {
+      color: #14532d;
+      background: #dcfce7;
+      border-color: #86efac;
+    }
+
+    .quiz-diagram {
+      margin: 12px 0 10px;
+      background: #020617;
+      border: 1px solid #334155;
+      border-radius: 18px;
+      overflow: hidden;
+      touch-action: pinch-zoom;
+    }
+
+    .quiz-diagram.hidden {
+      display: none;
+    }
+
+    .formula {
+      margin-top: 10px;
+      background: #fff;
+      border: 1px solid #e2e8f0;
+      border-radius: 16px;
+      padding: 12px;
+    }
+
+    .legend {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-top: 10px;
+      color: #475569;
+      font-size: .9rem;
+    }
+
+    .legend-item {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: #fff;
+      border: 1px solid #e2e8f0;
+      border-radius: 999px;
+      padding: 4px 9px;
+    }
+
+    .dot {
+      width: 12px;
+      height: 12px;
+      border-radius: 999px;
+      display: inline-block;
+    }
+
+    .dot.on { background: var(--on); }
+    .dot.off { background: var(--off); }
+
+    code {
+      display: inline-block;
+      background: #f1f5f9;
+      padding: 2px 6px;
+      border-radius: 8px;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      overflow: hidden;
+      border-radius: 14px;
+      background: #fff;
+      font-size: .95rem;
+    }
+
+    th, td {
+      border: 1px solid #e2e8f0;
+      padding: 8px;
+      text-align: center;
+    }
+
+    th { background: #f1f5f9; }
+
+    tr.current td {
+      background: var(--accent-soft);
+      font-weight: 850;
+    }
+
+    .tips p { margin: 8px 0; }
+
+    .law {
+      margin-top: 12px;
+      padding: 12px;
+      border: 1px solid #e2e8f0;
+      border-radius: 18px;
+      background: #fff;
+    }
+
+    .quiz-head {
+      display: flex;
+      gap: 12px;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      margin-bottom: 8px;
+    }
+
+    .question-box {
+      min-width: 300px;
+      max-width: 560px;
+      background: #f1f5f9;
+      border-radius: 18px;
+      padding: 12px 14px;
+    }
+
+    .question-text {
+      margin-top: 6px;
+      font-size: 1.02rem;
+      font-weight: 750;
+      white-space: pre-line;
+      line-height: 1.55;
+    }
+
+    .diagram-note {
+      padding: 8px 12px;
+      color: #ffffff;
+      background: #1e293b;
+      border-bottom: 1px solid #334155;
+      font-size: .92rem;
+      font-weight: 800;
+    }
+
+    .choices {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 8px;
+      margin: 12px 0 10px;
+    }
+
+    .choices button {
+      min-height: 52px;
+      background: #fff;
+    }
+
+    .choices button.selected {
+      color: #fff;
+      background: var(--accent);
+      border-color: var(--accent2);
+    }
+
+    .action-row {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      margin-top: 10px;
+    }
+
+    .actions {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .result {
+      margin-top: 14px;
+      border-radius: 18px;
+      border: 1px solid;
+      padding: 14px;
+      scroll-margin-top: 16px;
+    }
+
+    .result.ok {
+      background: var(--ok);
+      border-color: var(--ok-border);
+    }
+
+    .result.ng {
+      background: var(--ng);
+      border-color: var(--ng-border);
+    }
+
+    .result.flash {
+      animation: flashResult .45s ease-out;
+    }
+
+    @keyframes flashResult {
+      0% { transform: scale(0.985); opacity: .75; }
+      100% { transform: scale(1); opacity: 1; }
+    }
+
+    .hidden { display: none; }
+
+    .result-title {
+      font-size: 1.3rem;
+      font-weight: 850;
+      margin-bottom: 4px;
+    }
+
+    .mini-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 8px;
+      margin-top: 10px;
+    }
+
+    .mini {
+      padding: 10px;
+      border-radius: 16px;
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+    }
+
+    @media (max-width: 900px) {
+      main { padding: 12px; }
+      .layout, .sim-grid { grid-template-columns: 1fr; }
+      .choices { grid-template-columns: 1fr 1fr; }
+      .card { padding: 13px; }
+      .actions { width: 100%; }
+      .actions button { flex: 1 1 auto; }
+      .circuit-svg { min-width: 0; }
+    }
+  </style>
+</head>
+<body>
+<main>
+  <h1>論理回路トレーナー 改訂版8</h1>
+  <p class="lead">論理ゲート、真理値表、半加算器、全加算器をつなげて学習します。</p>
+
+  <section class="layout">
+    <div class="card">
+      <div class="top-row">
+        <div>
+          <h2>シミュレーションモード</h2>
+          <p class="muted">入力A・B・Cinを切り替えると、回路図・出力・真理値表が連動します。</p>
+        </div>
+        <select id="componentSelect" aria-label="学習項目を選択"></select>
+      </div>
+
+      <div class="sim-grid">
+        <div class="panel">
+          <div id="circuitSvg" class="svg-wrap"></div>
+
+          <div class="legend">
+            <span class="legend-item"><span class="dot on"></span>信号1</span>
+            <span class="legend-item"><span class="dot off"></span>信号0</span>
+            <span class="legend-item">HA = 半加算器</span>
+            <span class="legend-item">FA = 全加算器相当</span>
+          </div>
+
+          <div class="formula">
+            <div class="muted">式・意味</div>
+            <div class="expr" id="componentFormula"></div>
+            <p id="componentDescription" style="margin-top:6px"></p>
+          </div>
+        </div>
+
+        <div class="panel">
+          <h3>入力</h3>
+          <div class="input-row">
+            <button type="button" class="bit" id="inputA">A = 0</button>
+            <button type="button" class="bit" id="inputB">B = 0</button>
+            <button type="button" class="bit" id="inputCin">Cin = 0</button>
+          </div>
+
+          <h3 style="margin-top:14px">出力</h3>
+          <div class="output-big" id="outputArea"></div>
+
+          <div style="margin-top:14px">
+            <h3>真理値表</h3>
+            <div id="truthTable"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <aside class="card tips">
+      <h2>覚え方</h2>
+      <p><b>AND</b>：両方1なら1。</p>
+      <p><b>OR</b>：どちらか1なら1。</p>
+      <p><b>NOT</b>：0と1を反転。</p>
+      <p><b>XOR</b>：違えば1。同じなら0。</p>
+      <p><b>NAND</b>：ANDの反転。</p>
+      <p><b>NOR</b>：ORの反転。</p>
+      <div class="law">
+        <b>半加算器</b>
+        <p><code>Sum = A XOR B</code></p>
+        <p><code>Carry = A AND B</code></p>
+      </div>
+      <div class="law">
+        <b>全加算器</b>
+        <p><code>Sum = A XOR B XOR Cin</code></p>
+        <p><code>Cout = AB + BCin + ACin</code></p>
+      </div>
+    </aside>
+  </section>
+
+  <section class="card">
+    <div class="quiz-head">
+      <div>
+        <h2>ランダム練習問題</h2>
+        <p class="muted">論理ゲート・真理値表・半加算器・全加算器を確認します。</p>
+      </div>
+      <div class="question-box">
+        <div class="muted" id="quizType">問題</div>
+        <div class="question-text" id="quizText"></div>
+      </div>
+    </div>
+
+    <div id="quizDiagram" class="quiz-diagram hidden"></div>
+
+    <div class="choices" id="quizChoices"></div>
+
+    <div class="action-row">
+      <div>選択中：<b id="selectedAnswerText">未選択</b></div>
+      <div class="actions">
+        <button type="button" id="clearAnswerButton">選択解除</button>
+        <button type="button" class="primary" id="checkAnswerButton">答え合わせ</button>
+        <button type="button" class="secondary" id="nextQuizButton">次の問題</button>
+      </div>
+    </div>
+
+    <div id="quizResult" class="result hidden">
+      <div class="result-title" id="quizResultTitle"></div>
+      <p id="quizExplanation"></p>
+      <p style="margin-top:8px">正解：<b id="correctAnswerText"></b></p>
+      <div class="mini-grid" id="quizMiniDetails"></div>
+    </div>
+  </section>
+</main>
+
+<script>
+  let invertFriendlyMode = true;
+  const state = { A: 0, B: 0, Cin: 0 };
+  let currentComponentId = "AND";
+  let currentQuiz = null;
+  let selectedAnswer = null;
+
+  const COMPONENTS = [
+    {
+      id: "AND",
+      name: "ANDゲート",
+      formula: "Y = A AND B",
+      description: "AとBが両方1のときだけYが1になります。条件を両方満たす場面に対応します。",
+      inputs: ["A", "B"],
+      outputs: ["Y"],
+      calc: s => ({ Y: s.A & s.B }),
+      rows: () => binaryRows(["A", "B"])
+    },
+    {
+      id: "OR",
+      name: "ORゲート",
+      formula: "Y = A OR B",
+      description: "AまたはBの少なくとも一方が1ならYが1になります。両方1の場合も1です。",
+      inputs: ["A", "B"],
+      outputs: ["Y"],
+      calc: s => ({ Y: s.A | s.B }),
+      rows: () => binaryRows(["A", "B"])
+    },
+    {
+      id: "NOT",
+      name: "NOTゲート",
+      formula: "Y = NOT A",
+      description: "入力Aを反転します。Aが0なら1、Aが1なら0です。",
+      inputs: ["A"],
+      outputs: ["Y"],
+      calc: s => ({ Y: s.A ? 0 : 1 }),
+      rows: () => binaryRows(["A"])
+    },
+    {
+      id: "XOR",
+      name: "XORゲート",
+      formula: "Y = A XOR B",
+      description: "AとBが異なるときだけYが1になります。半加算器のSumに使われます。",
+      inputs: ["A", "B"],
+      outputs: ["Y"],
+      calc: s => ({ Y: s.A ^ s.B }),
+      rows: () => binaryRows(["A", "B"])
+    },
+    {
+      id: "NAND",
+      name: "NANDゲート",
+      formula: "Y = NOT (A AND B)",
+      description: "ANDの結果を反転します。AとBが両方1のときだけ0になります。",
+      inputs: ["A", "B"],
+      outputs: ["Y"],
+      calc: s => ({ Y: (s.A & s.B) ? 0 : 1 }),
+      rows: () => binaryRows(["A", "B"])
+    },
+    {
+      id: "NOR",
+      name: "NORゲート",
+      formula: "Y = NOT (A OR B)",
+      description: "ORの結果を反転します。AとBが両方0のときだけ1になります。",
+      inputs: ["A", "B"],
+      outputs: ["Y"],
+      calc: s => ({ Y: (s.A | s.B) ? 0 : 1 }),
+      rows: () => binaryRows(["A", "B"])
+    },
+    {
+      id: "XNOR",
+      name: "XNORゲート",
+      formula: "Y = NOT (A XOR B)",
+      description: "AとBが同じ値のとき1になります。XORの反転です。",
+      inputs: ["A", "B"],
+      outputs: ["Y"],
+      calc: s => ({ Y: (s.A ^ s.B) ? 0 : 1 }),
+      rows: () => binaryRows(["A", "B"])
+    },
+    {
+      id: "HALF_ADDER",
+      name: "半加算器",
+      formula: "Sum = A XOR B，Carry = A AND B",
+      description: "1ビット同士を加算します。和の下位ビットがSum、桁上がりがCarryです。",
+      inputs: ["A", "B"],
+      outputs: ["Sum", "Carry"],
+      calc: s => ({ Sum: s.A ^ s.B, Carry: s.A & s.B }),
+      rows: () => binaryRows(["A", "B"])
+    },
+    {
+      id: "FULL_ADDER",
+      name: "全加算器",
+      formula: "Sum = A XOR B XOR Cin，Cout = AB + BCin + ACin",
+      description: "A、B、下位桁からの桁上がりCinを加算します。複数ビットの加算回路に使います。",
+      inputs: ["A", "B", "Cin"],
+      outputs: ["Sum", "Cout"],
+      calc: s => {
+        const total = s.A + s.B + s.Cin;
+        return { Sum: total % 2, Cout: total >= 2 ? 1 : 0 };
+      },
+      rows: () => binaryRows(["A", "B", "Cin"])
+    }
+  ];
+
+  const QUIZ_BUILDERS = [
+    gateOutputQuiz,
+    identifyGateQuiz,
+    halfAdderQuiz,
+    fullAdderQuiz,
+    truthTableQuiz
+  ];
+
+  function binaryRows(inputs) {
+    const count = 2 ** inputs.length;
+    const rows = [];
+    for (let n = 0; n < count; n++) {
+      const row = {};
+      inputs.forEach((key, index) => {
+        const shift = inputs.length - index - 1;
+        row[key] = (n >> shift) & 1;
+      });
+      rows.push(row);
+    }
+    return rows;
+  }
+
+  function component() {
+    return COMPONENTS.find(c => c.id === currentComponentId) || COMPONENTS[0];
+  }
+
+  function restrictedState(c, row = state) {
+    const s = { A: 0, B: 0, Cin: 0 };
+    c.inputs.forEach(key => s[key] = row[key]);
+    return s;
+  }
+
+  function sig(value) {
+    return value ? "#22c55e" : "#64748b";
+  }
+
+  function boolText(value) {
+    return value ? "1" : "0";
+  }
+
+  function render() {
+    const c = component();
+    document.getElementById("componentFormula").textContent = c.formula;
+    document.getElementById("componentDescription").textContent = c.description;
+    document.getElementById("circuitSvg").innerHTML = circuitSvg(c, state);
+
+    ["A", "B", "Cin"].forEach(key => {
+      const btn = document.getElementById("input" + key);
+      btn.textContent = key + " = " + state[key];
+      btn.classList.toggle("on", state[key] === 1);
+      btn.style.display = c.inputs.includes(key) ? "inline-flex" : "none";
+    });
+
+    const out = c.calc(state);
+    document.getElementById("outputArea").innerHTML = c.outputs.map(key => `
+      <div class="output-card ${out[key] ? "on" : ""}">
+        <div class="label">${key}</div>
+        <div class="value">${out[key]}</div>
+      </div>
+    `).join("");
+
+    document.getElementById("truthTable").innerHTML = truthTableHtml(c);
+  }
+
+  function truthTableHtml(c) {
+    const rows = c.rows();
+    const headers = [...c.inputs, ...c.outputs];
+
+    const body = rows.map(row => {
+      const out = c.calc(restrictedState(c, row));
+      const current = c.inputs.every(key => state[key] === row[key]);
+      const cells = headers.map(key => `<td>${key in row ? row[key] : out[key]}</td>`).join("");
+      return `<tr class="${current ? "current" : ""}">${cells}</tr>`;
+    }).join("");
+
+    return `
+      <table>
+        <thead><tr>${headers.map(h => `<th>${h}</th>`).join("")}</tr></thead>
+        <tbody>${body}</tbody>
+      </table>
+    `;
+  }
+
+  function parseAdderChoice(choice, carryName) {
+    if (!choice || typeof choice !== "string") return null;
+    const sumMatch = choice.match(/Sum=([01])/);
+    const carryRegex = new RegExp(carryName + "=([01])");
+    const carryMatch = choice.match(carryRegex);
+    if (!sumMatch || !carryMatch) return null;
+    const obj = { Sum: sumMatch[1] };
+    obj[carryName] = carryMatch[1];
+    return obj;
+  }
+
+  function circuitSvg(c, s) {
+    if (c.id === "HALF_ADDER") return halfAdderSvg(c, s);
+    if (c.id === "FULL_ADDER") return fullAdderSvg(c, s);
+    return genericGateSvg(c, s);
+  }
+
+  function genericGateSvg(c, s, hideOutputs = false, chosen = null) {
+    const out = c.calc(s);
+    const displayY = chosen && (chosen === "0" || chosen === "1") ? chosen : (hideOutputs ? "?" : out.Y);
+    const gateLabel = c.id;
+    const inputY = c.inputs.length === 1 ? [150] : [120, 185];
+
+    return `
+      <svg class="circuit-svg" viewBox="0 0 760 310" role="img" aria-label="${c.name}の回路図"><style>text{fill:#fff!important;stroke:none!important}.source-label-bg{fill:#020617!important;stroke:#fff!important}</style>
+        <rect x="0" y="0" width="760" height="310" rx="18" fill="#020617"></rect>
+
+        ${c.inputs.map((key, i) => line(70, inputY[i], 280, inputY[i], sig(s[key]))).join("")}
+        ${c.inputs.map((key, i) => dot(280, inputY[i], sig(s[key]))).join("")}
+        ${c.inputs.map((key, i) => text(28, inputY[i] + 6, `${key}=${s[key]}`, 18, "#0f172a", "start", 800)).join("")}
+
+        ${gateBox(285, 80, 170, 140, gateLabel, gateFill(c.id))}
+
+        ${line(455, 150, 630, 150, sig(out.Y))}
+        ${dot(455, 150, sig(out.Y))}
+        ${text(642, 156, `Y=${displayY}`, 20, "#0f172a", "start", 900)}
+
+        ${text(270, 272, c.formula, 16, "#475569", "start", 700)}
+      </svg>
+    `;
+  }
+
+  function halfAdderSvg(c, s, hideOutputs = false, chosen = null) {
+    const out = c.calc(s);
+    const sum = out.Sum;
+    const carry = out.Carry;
+    const chosenHalf = parseAdderChoice(chosen, "Carry");
+    const displaySum = chosenHalf ? chosenHalf.Sum : (hideOutputs ? "?" : sum);
+    const displayCarry = chosenHalf ? chosenHalf.Carry : (hideOutputs ? "?" : carry);
+
+    return `
+      <svg class="circuit-svg" viewBox="0 0 780 390" role="img" aria-label="半加算器の回路図"><style>text{fill:#fff!important;stroke:none!important}.source-label-bg{fill:#020617!important;stroke:#fff!important}</style>
+        <rect x="0" y="0" width="780" height="390" rx="18" fill="#020617"></rect>
+
+        ${sourceLabel(22, 42, "入力元A")}
+        ${text(26, 78, `A=${s.A}`, 18, "#0f172a", "start", 900)}
+        ${sourceLabel(22, 130, "入力元B")}
+        ${text(26, 165, `B=${s.B}`, 18, "#0f172a", "start", 900)}
+
+        <!-- 入力Aの分岐 -->
+        ${line(80, 72, 150, 72, sig(s.A))}
+        ${line(150, 72, 150, 105, sig(s.A))}
+        ${line(150, 105, 245, 105, sig(s.A))}
+        ${line(150, 72, 150, 255, sig(s.A))}
+        ${line(150, 255, 245, 255, sig(s.A))}
+        ${dot(150, 72, sig(s.A))}
+
+        <!-- 入力Bの分岐 -->
+        ${line(80, 160, 180, 160, sig(s.B))}
+        ${line(180, 160, 180, 135, sig(s.B))}
+        ${line(180, 135, 245, 135, sig(s.B))}
+        ${line(180, 160, 180, 285, sig(s.B))}
+        ${line(180, 285, 245, 285, sig(s.B))}
+        ${dot(180, 160, sig(s.B))}
+
+        ${gateBox(245, 70, 160, 90, "XOR", "#312e81")}
+        ${smallLabel(252, 101, "入力A")}
+        ${smallLabel(252, 132, "入力B")}
+        ${text(325, 178, "Sumを作る", 14, "#64748b", "middle", 700)}
+
+        ${gateBox(245, 220, 160, 90, "AND", "#14532d")}
+        ${smallLabel(252, 251, "入力A")}
+        ${smallLabel(252, 282, "入力B")}
+        ${text(325, 328, "Carryを作る", 14, "#64748b", "middle", 700)}
+
+        ${line(405, 115, 620, 115, sig(sum))}
+        ${dot(405, 115, sig(sum))}
+        ${text(632, 122, `Sum=${displaySum}`, 20, "#0f172a", "start", 900)}
+
+        ${line(405, 265, 620, 265, sig(carry))}
+        ${dot(405, 265, sig(carry))}
+        ${text(632, 272, `Carry=${displayCarry}`, 20, "#0f172a", "start", 900)}
+
+        ${text(210, 365, "半加算器：AとBを、XORとANDの2本に分けて計算する", 16, "#475569", "start", 700)}
+      </svg>
+    `;
+  }
+
+  function fullAdderSvg(c, s, hideOutputs = false, chosen = null) {
+    const s1 = s.A ^ s.B;
+    const c1 = s.A & s.B;
+    const sum = s1 ^ s.Cin;
+    const c2 = s1 & s.Cin;
+    const cout = c1 | c2;
+    const chosenFull = parseAdderChoice(chosen, "Cout");
+    const displaySum = chosenFull ? chosenFull.Sum : (hideOutputs ? "?" : sum);
+    const displayCout = chosenFull ? chosenFull.Cout : (hideOutputs ? "?" : cout);
+
+    return `
+      <svg class="circuit-svg" viewBox="0 0 880 470" role="img" aria-label="全加算器の回路図"><style>text{fill:#fff!important;stroke:none!important}.source-label-bg{fill:#020617!important;stroke:#fff!important}</style>
+        <rect x="0" y="0" width="880" height="470" rx="18" fill="#020617"></rect>
+
+        ${sourceLabel(22, 64, "入力元A")}
+        ${text(28, 100, `A=${s.A}`, 18, "#0f172a", "start", 900)}
+        ${sourceLabel(22, 129, "入力元B")}
+        ${text(28, 165, `B=${s.B}`, 18, "#0f172a", "start", 900)}
+        ${sourceLabel(22, 242, "入力元Cin")}
+        ${text(28, 278, `Cin=${s.Cin}`, 18, "#0f172a", "start", 900)}
+
+        <!-- A, B -> HA1 -->
+        ${line(88, 94, 210, 94, sig(s.A))}
+        ${line(88, 159, 210, 159, sig(s.B))}
+        ${dot(210, 94, sig(s.A))}
+        ${dot(210, 159, sig(s.B))}
+
+        ${adderBox(210, 62, 160, 130, "HA1", "A+B")}
+        ${smallLabel(218, 97, "入力A")}
+        ${smallLabel(218, 162, "入力B")}
+        ${smallLabel(335, 97, "S1")}
+        ${smallLabel(335, 162, "C1")}
+
+        <!-- HA1 Sum -> HA2 -->
+        ${line(370, 96, 415, 96, sig(s1))}
+        ${line(415, 96, 415, 205, sig(s1))}
+        ${line(415, 205, 485, 205, sig(s1))}
+        ${dot(415, 96, sig(s1))}
+        ${text(382, 82, `S1=${hideOutputs ? "?" : s1}`, 15, "#475569", "start", 800)}
+
+        <!-- Cin -> HA2 -->
+        ${line(88, 272, 485, 272, sig(s.Cin))}
+        ${dot(485, 272, sig(s.Cin))}
+
+        ${adderBox(485, 174, 160, 130, "HA2", "S1+Cin")}
+        ${smallLabel(493, 208, "HA1のSum")}
+        ${smallLabel(493, 275, "入力Cin")}
+        ${smallLabel(607, 208, "Sum")}
+        ${smallLabel(610, 275, "C2")}
+
+        <!-- Final Sum -->
+        ${line(645, 207, 770, 207, sig(sum))}
+        ${dot(645, 207, sig(sum))}
+        ${text(782, 214, `Sum=${displaySum}`, 20, "#0f172a", "start", 900)}
+
+        <!-- C1 -> OR -->
+        ${line(370, 160, 405, 160, sig(c1))}
+        ${line(405, 160, 405, 355, sig(c1))}
+        ${line(405, 355, 670, 355, sig(c1))}
+        ${dot(405, 160, sig(c1))}
+        ${text(382, 180, `C1=${hideOutputs ? "?" : c1}`, 15, "#475569", "start", 800)}
+
+        <!-- C2 -> OR -->
+        ${line(645, 272, 670, 272, sig(c2))}
+        ${line(670, 272, 670, 392, sig(c2))}
+        ${dot(670, 272, sig(c2))}
+        ${text(650, 258, `C2=${hideOutputs ? "?" : c2}`, 15, "#475569", "start", 800)}
+
+        ${gateBox(670, 330, 130, 85, "OR", "#7c2d12")}
+        ${smallLabel(678, 358, "HA1のCarry")}
+        ${smallLabel(678, 396, "HA2のCarry")}
+
+        ${line(800, 372, 822, 372, sig(cout))}
+        ${dot(800, 372, sig(cout))}
+        ${text(830, 379, `Cout=${displayCout}`, 20, "#0f172a", "start", 900)}
+
+        ${text(165, 444, "全加算器：HA1でA+B、HA2でS1+Cin、2つの桁上がりC1・C2をORでまとめる", 16, "#475569", "start", 700)}
+      </svg>
+    `;
+  }
+
+  function line(x1, y1, x2, y2, color) {
+    return `<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="${color}" stroke-width="8" stroke-linecap="round"></line>`;
+  }
+
+  function dot(x, y, color) {
+    return `<circle cx="${x}" cy="${y}" r="6" fill="${color}" stroke="#ffffff" stroke-width="2"></circle>`;
+  }
+
+  function text(x, y, content, size, color, anchor = "start", weight = 700) {
+    return `<text x="${x}" y="${y}" fill="#ffffff" font-size="${size}" font-weight="${weight}" text-anchor="${anchor}">${escapeHtml(content)}</text>`;
+  }
+
+  function smallLabel(x, y, content) {
+    return `<text x="${x}" y="${y}" fill="#ffffff" font-size="13" font-weight="850">${escapeHtml(content)}</text>`;
+  }
+
+  function sourceLabel(x, y, content) {
+    return `
+      <rect class="source-label-bg" x="${x - 8}" y="${y - 19}" width="${content.length * 12 + 18}" height="26" rx="8" fill="#020617" stroke="#ffffff" stroke-width="1.5"></rect>
+      <text x="${x}" y="${y}" fill="#ffffff" font-size="15" font-weight="900">${escapeHtml(content)}</text>
+    `;
+  }
+
+  function gateBox(x, y, w, h, label, fill) {
+    return `
+      <rect x="${x}" y="${y}" width="${w}" height="${h}" rx="18" fill="${fill}" stroke="#ffffff" stroke-width="2.2"></rect>
+      <text x="${x + w / 2}" y="${y + h / 2 + 7}" fill="#ffffff" font-size="24" font-weight="950" text-anchor="middle">${escapeHtml(label)}</text>
+    `;
+  }
+
+  function adderBox(x, y, w, h, label, sub) {
+    return `
+      <rect x="${x}" y="${y}" width="${w}" height="${h}" rx="20" fill="#312e81" stroke="#ffffff" stroke-width="2.2"></rect>
+      <text x="${x + w / 2}" y="${y + 58}" fill="#ffffff" font-size="25" font-weight="950" text-anchor="middle">${escapeHtml(label)}</text>
+      <text x="${x + w / 2}" y="${y + 86}" fill="#ffffff" font-size="15" font-weight="800" text-anchor="middle">${escapeHtml(sub)}</text>
+    `;
+  }
+
+  function gateFill(id) {
+    if (id.includes("N")) return "#7f1d1d";
+    if (id === "XOR" || id === "XNOR") return "#312e81";
+    if (id === "OR") return "#7c2d12";
+    return "#14532d";
+  }
+
+
+  function mysteryGateSvg(pattern, chosen = null) {
+    return `
+      <svg class="circuit-svg" viewBox="0 0 760 310" role="img" aria-label="未知の論理ゲート図"><style>text{fill:#fff!important;stroke:none!important}.source-label-bg{fill:#020617!important;stroke:#fff!important}</style>
+        <rect x="0" y="0" width="760" height="310" rx="18" fill="#020617"></rect>
+        ${line(70, 120, 280, 120, "#64748b")}
+        ${line(70, 185, 280, 185, "#64748b")}
+        ${dot(280, 120, "#64748b")}
+        ${dot(280, 185, "#64748b")}
+        ${text(28, 126, "A", 18, "#000000", "start", 900)}
+        ${text(28, 191, "B", 18, "#000000", "start", 900)}
+        ${gateBox(285, 80, 170, 140, chosen || "?", "#312e81")}
+        ${line(455, 150, 630, 150, "#64748b")}
+        ${dot(455, 150, "#64748b")}
+        ${text(642, 156, "Y", 20, "#000000", "start", 900)}
+        ${text(190, 272, "AB=00,01,10,11 の順で出力Yは " + pattern, 16, "#000000", "start", 800)}
+      </svg>
+    `;
+  }
+
+  function initComponentSelect() {
+    const select = document.getElementById("componentSelect");
+    COMPONENTS.forEach(c => {
+      const opt = document.createElement("option");
+      opt.value = c.id;
+      opt.textContent = c.name;
+      select.appendChild(opt);
+    });
+    select.value = currentComponentId;
+    select.addEventListener("change", () => {
+      currentComponentId = select.value;
+      render();
+    });
+  }
+
+  function toggleInput(key) {
+    state[key] = state[key] ? 0 : 1;
+    render();
+  }
+
+  function newQuiz() {
+    selectedAnswer = null;
+    const builder = QUIZ_BUILDERS[Math.floor(Math.random() * QUIZ_BUILDERS.length)];
+    currentQuiz = builder();
+    renderQuiz();
+  }
+
+  function quizDiagramWrap(note, svg) {
+    return `<div class="diagram-note">${escapeHtml(note)}</div>${svg}`;
+  }
+
+  function renderQuiz() {
+    document.getElementById("quizType").textContent = currentQuiz.type;
+    document.getElementById("quizText").textContent = currentQuiz.text;
+    const diagram = document.getElementById("quizDiagram");
+    if (currentQuiz.diagramForChoice) {
+      diagram.innerHTML = currentQuiz.diagramForChoice(selectedAnswer);
+      diagram.classList.remove("hidden");
+    } else if (currentQuiz.diagram) {
+      diagram.innerHTML = currentQuiz.diagram;
+      diagram.classList.remove("hidden");
+    } else {
+      diagram.innerHTML = "";
+      diagram.classList.add("hidden");
+    }
+
+    document.getElementById("quizChoices").innerHTML = currentQuiz.choices.map(choice => `
+      <button type="button" data-choice="${escapeHtml(choice)}">${escapeHtml(choice)}</button>
+    `).join("");
+
+    document.querySelectorAll("#quizChoices button").forEach(btn => {
+      btn.addEventListener("click", () => {
+        selectedAnswer = btn.dataset.choice;
+        document.querySelectorAll("#quizChoices button").forEach(b => b.classList.remove("selected"));
+        btn.classList.add("selected");
+        document.getElementById("selectedAnswerText").textContent = selectedAnswer;
+        const quizDiagramEl = document.getElementById("quizDiagram");
+        if (currentQuiz.diagramForChoice) {
+          quizDiagramEl.innerHTML = currentQuiz.diagramForChoice(selectedAnswer);
+          quizDiagramEl.classList.remove("hidden");
+        }
+        document.getElementById("quizResult").classList.add("hidden");
+      });
+    });
+
+    document.getElementById("selectedAnswerText").textContent = "未選択";
+    const quizDiagramEl = document.getElementById("quizDiagram");
+    if (currentQuiz && currentQuiz.diagramForChoice) {
+      quizDiagramEl.innerHTML = currentQuiz.diagramForChoice(null);
+      quizDiagramEl.classList.remove("hidden");
+    }
+    document.getElementById("quizResult").classList.add("hidden");
+  }
+
+  function checkQuiz() {
+    if (selectedAnswer === null) selectedAnswer = "";
+    const ok = selectedAnswer === currentQuiz.answer;
+    const box = document.getElementById("quizResult");
+
+    box.classList.remove("hidden", "ok", "ng", "flash");
+    box.classList.add(ok ? "ok" : "ng");
+    document.getElementById("quizResultTitle").textContent = ok ? "正解です" : "惜しいです";
+    document.getElementById("quizExplanation").textContent = currentQuiz.explanation;
+    document.getElementById("correctAnswerText").textContent = currentQuiz.answer;
+    const correctDiagram = currentQuiz.correctDiagram ? `<div class="mini" style="grid-column: 1 / -1"><b>正解を反映した図</b></div><div class="quiz-diagram" style="grid-column: 1 / -1; margin-top:0">${currentQuiz.correctDiagram()}</div>` : "";
+    document.getElementById("quizMiniDetails").innerHTML = (currentQuiz.details || "") + correctDiagram;
+
+    requestAnimationFrame(() => {
+      box.classList.add("flash");
+      box.scrollIntoView({ behavior: "smooth", block: "start" });
+    });
+  }
+
+  function clearQuizAnswer() {
+    selectedAnswer = null;
+    document.querySelectorAll("#quizChoices button").forEach(b => b.classList.remove("selected"));
+    document.getElementById("selectedAnswerText").textContent = "未選択";
+    const quizDiagramEl = document.getElementById("quizDiagram");
+    if (currentQuiz && currentQuiz.diagramForChoice) {
+      quizDiagramEl.innerHTML = currentQuiz.diagramForChoice(null);
+      quizDiagramEl.classList.remove("hidden");
+    }
+    document.getElementById("quizResult").classList.add("hidden");
+  }
+
+  function randBit() {
+    return Math.random() < 0.5 ? 0 : 1;
+  }
+
+  function gateOutputQuiz() {
+    const gates = COMPONENTS.filter(c => ["AND","OR","NOT","XOR","NAND","NOR","XNOR"].includes(c.id));
+    const c = gates[Math.floor(Math.random() * gates.length)];
+    const s = { A: randBit(), B: randBit(), Cin: 0 };
+    const out = c.calc(s).Y;
+    const inputText = c.inputs.map(k => `${k}=${s[k]}`).join("，");
+
+    return {
+      type: "論理ゲート出力",
+      text: `問　${c.name}の入力が ${inputText} のとき，出力Yはいくつか。`,
+      choices: ["0", "1", "A", "B"],
+      answer: String(out),
+      explanation: `${c.formula} なので、${inputText} のとき Y=${out} です。`,
+      details: miniDetails(c, s),
+      diagramForChoice: choice => quizDiagramWrap("選択した値を出力Yに反映しています", genericGateSvg(c, s, true, choice)),
+      correctDiagram: () => quizDiagramWrap("正しい出力", genericGateSvg(c, s, true, String(out)))
+    };
+  }
+
+  function identifyGateQuiz() {
+    const candidates = COMPONENTS.filter(c => ["AND","OR","XOR","NAND","NOR","XNOR"].includes(c.id));
+    const c = candidates[Math.floor(Math.random() * candidates.length)];
+    const rows = binaryRows(["A","B"]);
+    const pattern = rows.map(row => c.calc({A: row.A, B: row.B, Cin:0}).Y).join("");
+
+    return {
+      type: "真理値表からゲート判定",
+      text: `問　入力ABを 00, 01, 10, 11 の順に並べたとき，出力Yが ${pattern} となる論理ゲートはどれか。`,
+      choices: makeChoices(c.id, ["AND", "OR", "XOR", "NAND", "NOR", "XNOR"], 4),
+      answer: c.id,
+      explanation: `AB=00,01,10,11 の順で出力が ${pattern} になるのは ${c.id} です。`,
+      details: miniTruthTable(c, rows),
+      diagramForChoice: choice => quizDiagramWrap("選択したゲート名を図に反映しています", mysteryGateSvg(pattern, choice)),
+      correctDiagram: () => quizDiagramWrap("正しいゲート", mysteryGateSvg(pattern, c.id))
+    };
+  }
+
+  function halfAdderQuiz() {
+    const A = randBit(), B = randBit();
+    const sum = A ^ B;
+    const carry = A & B;
+
+    return {
+      type: "半加算器",
+      text: `問　半加算器において，A=${A}，B=${B} のとき，SumとCarryの組合せはどれか。`,
+      choices: ["Sum=0, Carry=0", "Sum=1, Carry=0", "Sum=0, Carry=1", "Sum=1, Carry=1"],
+      answer: `Sum=${sum}, Carry=${carry}`,
+      explanation: `半加算器では Sum=A XOR B，Carry=A AND B です。したがって Sum=${sum}, Carry=${carry} です。`,
+      details: `
+        <div class="mini"><b>Sum</b><br>A XOR B = ${A} XOR ${B} = ${sum}</div>
+        <div class="mini"><b>Carry</b><br>A AND B = ${A} AND ${B} = ${carry}</div>
+      `,
+      diagramForChoice: choice => quizDiagramWrap("選択したSum/Carryを図に反映しています", halfAdderSvg(COMPONENTS.find(x => x.id === "HALF_ADDER"), {A, B, Cin:0}, true, choice)),
+      correctDiagram: () => quizDiagramWrap("正しいSum/Carry", halfAdderSvg(COMPONENTS.find(x => x.id === "HALF_ADDER"), {A, B, Cin:0}, true, `Sum=${sum}, Carry=${carry}`))
+    };
+  }
+
+  function fullAdderQuiz() {
+    const A = randBit(), B = randBit(), Cin = randBit();
+    const total = A + B + Cin;
+    const sum = total % 2;
+    const cout = total >= 2 ? 1 : 0;
+
+    return {
+      type: "全加算器",
+      text: `問　全加算器において，A=${A}，B=${B}，Cin=${Cin} のとき，SumとCoutの組合せはどれか。`,
+      choices: ["Sum=0, Cout=0", "Sum=1, Cout=0", "Sum=0, Cout=1", "Sum=1, Cout=1"],
+      answer: `Sum=${sum}, Cout=${cout}`,
+      explanation: `A+B+Cin=${total} です。2進数では下位ビットがSum、桁上がりがCoutなので Sum=${sum}, Cout=${cout} です。`,
+      details: `
+        <div class="mini"><b>合計</b><br>${A}+${B}+${Cin} = ${total}</div>
+        <div class="mini"><b>出力</b><br>Sum=${sum}, Cout=${cout}</div>
+      `,
+      diagramForChoice: choice => quizDiagramWrap("選択したSum/Coutを図に反映しています", fullAdderSvg(COMPONENTS.find(x => x.id === "FULL_ADDER"), {A, B, Cin}, true, choice)),
+      correctDiagram: () => quizDiagramWrap("正しいSum/Cout", fullAdderSvg(COMPONENTS.find(x => x.id === "FULL_ADDER"), {A, B, Cin}, true, `Sum=${sum}, Cout=${cout}`))
+    };
+  }
+
+  function truthTableQuiz() {
+    const pool = COMPONENTS.filter(c => ["AND","OR","XOR","NAND","NOR"].includes(c.id));
+    const c = pool[Math.floor(Math.random() * pool.length)];
+    const rows = binaryRows(["A","B"]);
+    const row = rows[Math.floor(Math.random() * rows.length)];
+    const out = c.calc({A: row.A, B: row.B, Cin:0}).Y;
+
+    return {
+      type: "条件式・真理値表",
+      text: `問　論理式 ${c.formula.replace("Y = ", "")} について，A=${row.A}，B=${row.B} のとき，Yはいくつか。`,
+      choices: ["0", "1", "Aと同じ", "Bと同じ"],
+      answer: String(out),
+      explanation: `${c.formula} に A=${row.A}, B=${row.B} を代入すると Y=${out} です。`,
+      details: miniDetails(c, {A: row.A, B: row.B, Cin:0}),
+      diagramForChoice: choice => quizDiagramWrap("選択した値を出力Yに反映しています", genericGateSvg(c, {A: row.A, B: row.B, Cin:0}, true, choice)),
+      correctDiagram: () => quizDiagramWrap("正しい出力", genericGateSvg(c, {A: row.A, B: row.B, Cin:0}, true, String(out)))
+    };
+  }
+
+  function miniDetails(c, s) {
+    const out = c.calc(s);
+    const outText = Object.entries(out).map(([k,v]) => `${k}=${v}`).join("，");
+    return `
+      <div class="mini"><b>対象</b><br>${c.name}<br><code>${c.formula}</code></div>
+      <div class="mini"><b>今回の値</b><br>${c.inputs.map(k => `${k}=${s[k]}`).join("，")}<br>${outText}</div>
+    `;
+  }
+
+  function miniTruthTable(c, rows) {
+    const body = rows.map(r => {
+      const y = c.calc({A:r.A, B:r.B, Cin:0}).Y;
+      return `<tr><td>${r.A}</td><td>${r.B}</td><td>${y}</td></tr>`;
+    }).join("");
+
+    return `
+      <div class="mini" style="grid-column: 1 / -1">
+        <b>${c.id}の真理値表</b>
+        <table style="margin-top:6px">
+          <thead><tr><th>A</th><th>B</th><th>Y</th></tr></thead>
+          <tbody>${body}</tbody>
+        </table>
+      </div>
+    `;
+  }
+
+  function makeChoices(answer, pool, count) {
+    const distractors = pool.filter(x => x !== answer);
+    return shuffle([answer, ...shuffle(distractors).slice(0, count - 1)]);
+  }
+
+  function shuffle(array) {
+    return [...array].sort(() => Math.random() - 0.5);
+  }
+
+  function escapeHtml(str) {
+    return String(str)
+      .replaceAll("&", "&amp;")
+      .replaceAll("<", "&lt;")
+      .replaceAll(">", "&gt;")
+      .replaceAll('"', "&quot;");
+  }
+
+  function runSelfCheck() {
+    const checks = [
+      ["HALF_ADDER", {A:0,B:0,Cin:0}, {Sum:0,Carry:0}],
+      ["HALF_ADDER", {A:1,B:0,Cin:0}, {Sum:1,Carry:0}],
+      ["HALF_ADDER", {A:1,B:1,Cin:0}, {Sum:0,Carry:1}],
+      ["FULL_ADDER", {A:1,B:1,Cin:1}, {Sum:1,Cout:1}],
+      ["FULL_ADDER", {A:1,B:0,Cin:1}, {Sum:0,Cout:1}],
+      ["FULL_ADDER", {A:0,B:0,Cin:1}, {Sum:1,Cout:0}]
+    ];
+
+    const errors = checks.filter(([id, input, expected]) => {
+      const c = COMPONENTS.find(x => x.id === id);
+      const actual = c.calc(input);
+      return Object.keys(expected).some(key => actual[key] !== expected[key]);
+    });
+
+    if (errors.length) {
+      console.error("自己チェックでエラー:", errors);
+      alert("内部計算に不整合があります。修正版を確認してください。");
+    }
+  }
+
+  function applyInvertFriendlyMode() {}
+
+  function toggleInvertFriendlyMode() {}
+
+  function init() {
+    runSelfCheck();
+    applyInvertFriendlyMode();
+    initComponentSelect();
+
+    document.getElementById("inputA").addEventListener("click", () => toggleInput("A"));
+    document.getElementById("inputB").addEventListener("click", () => toggleInput("B"));
+    document.getElementById("inputCin").addEventListener("click", () => toggleInput("Cin"));
+
+    document.getElementById("clearAnswerButton").addEventListener("click", clearQuizAnswer);
+    document.getElementById("checkAnswerButton").addEventListener("click", checkQuiz);
+    document.getElementById("nextQuizButton").addEventListener("click", newQuiz);
+
+    render();
+    newQuiz();
+  }
+
+  init();
+</script>
+</body>
+</html>
